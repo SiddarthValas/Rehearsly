@@ -1,83 +1,254 @@
+<div align="center">
+
 # Rehearsly
 
-A focused GenAI interview-practice app: prepare from a resume or job description, answer one question at a time, review the feedback, and practise weak topics again.
+**An AI interviewer that actually read your resume.**
 
-Siddarth Valasubramanian · B.Tech CSE (Data Science), UPES
+It asks about your real projects, pushes back when an answer is thin, gets harder as you get better,<br>
+and grades every answer with two independent AI judges. Then it flips the table.
 
-## Core experience
+### [Try it live: rehearsly-five.vercel.app](https://rehearsly-five.vercel.app)
 
-- Resume and job-description interviews, behavioral practice, company HR rounds, and custom subjects.
-- Structured topic planning with evidence checks against supplied material.
-- Adaptive difficulty and targeted follow-up questions.
-- Text answers, speech transcription, question playback, and optional hands-free practice.
-- Per-answer coaching: practice score, strengths, gaps, STAR structure, and suggested rewrites.
-- A final review, targeted drills, PDF/Markdown export, and saved practice history.
-- Company question research and practice from selected reported questions.
+[Features](#features) &nbsp;|&nbsp; [Mirror mode](#mirror-mode-you-are-the-interviewer) &nbsp;|&nbsp; [How it works](#how-it-works) &nbsp;|&nbsp; [Tech stack](#tech-stack) &nbsp;|&nbsp; [Results](#results) &nbsp;|&nbsp; [Run locally](#run-locally)
 
-The main navigation is Overview, Rehearse, Questions, and Progress. Grader evaluation remains available at `#/study`, linked from the overview footer.
+<br>
 
-The application no longer includes hiring probabilities, committee votes, Mirror mode, resume heatmaps, or reacting interviewer faces. Scores describe practice performance; they are not validated predictions of hiring outcomes. Existing interview history remains readable. Old Mirror links return to the overview, and retired API endpoints are unavailable.
+<img src="docs/screenshots/landing.jpg" alt="Rehearsly home page" width="900">
 
-The existing PDF report and presentation describe the earlier, broader feature set. Update those documents before presenting this version.
+</div>
+
+<br>
+
+## Why Rehearsly
+
+Ask a general chatbot to interview you and it asks textbook questions, praises everything, and sometimes invents things you never did. Rehearsly puts structure around the model:
+
+- **Grounded questions.** Every topic must quote a real line from your resume, and the server checks it before asking.
+- **Honest grading.** A fixed rubric, two graders from different model families, and a score you can verify by hand.
+- **A real conversation.** Follow-ups on weak answers, adaptive difficulty, and spoken answers with voice playback.
+
+<br>
+
+## Features
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/setup.jpg" alt="Setup page"><br>
+      <b>Five interview types</b><br>
+      Resume, job description, behavioural (STAR), HR round for a named company, or any custom subject. Pick length, focus areas, interviewer style and starting difficulty.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/room.jpg" alt="Interview room"><br>
+      <b>The interview room</b><br>
+      One question at a time, streamed live. Type or speak (Whisper), with hands-free mode. Live grade, quoted evidence, what was missing, STAR coverage and delivery stats after every answer.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/review.jpg" alt="Review page"><br>
+      <b>A review you can act on</b><br>
+      Practice score, strengths, gaps, a three-step plan, a stronger version of every answer, and a one-click drill on only your weak topics. Export as PDF or Markdown.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/progress.jpg" alt="Progress page"><br>
+      <b>Progress over time</b><br>
+      Score trend, averages by question type and full history, stored privately in your own browser.
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/bank.jpg" alt="Question bank"><br>
+      <b>Company question bank</b><br>
+      Enter a company and role. Live web search across Glassdoor, Reddit, LeetCode Discuss, GeeksforGeeks and more, grouped by subject and round with source links.
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/mirror-start.jpg" alt="Mirror mode"><br>
+      <b>Mirror mode</b><br>
+      Switch sides and interview an AI candidate with a hidden persona. Spot the bluffs, the rambling and the dodges. More below.
+    </td>
+  </tr>
+</table>
+
+<br>
+
+## Mirror mode: you are the interviewer
+
+Most interview tools only put you in the candidate's chair. Mirror mode swaps the roles. You question Aanya or Ambar, an AI candidate with a resume and a secret: they might be genuinely strong, or a bluffer, a rambler, or someone who never gets specific. Mark each answer solid or weak, name the flaw, and find out at the reveal how much you caught.
+
+Sitting on the other side teaches what interviewers listen for, and you start hearing the same problems in your own answers.
+
+<table>
+  <tr>
+    <td width="50%"><img src="docs/screenshots/mirror-room.jpg" alt="Interviewing the AI candidate"></td>
+    <td width="50%"><img src="docs/screenshots/mirror-reveal.jpg" alt="Mirror mode reveal"></td>
+  </tr>
+  <tr>
+    <td valign="top">Judge every answer and tag the flaw: bluffing, rambling, vague, dodged or contradicted.</td>
+    <td valign="top">The reveal: who they really were, what you caught, false alarms, and the follow-up you should have asked.</td>
+  </tr>
+</table>
+
+| Persona | How they answer |
+|---|---|
+| The genuine article | solid 85%, vague 15% |
+| The bluffer | solid 40%, bluff 45%, contradiction 15% |
+| The rambler | solid 45%, ramble 45%, dodge 10% |
+| The generalist | solid 40%, vague 50%, dodge 10% |
+| The mixed bag | solid 45%, bluff 15%, ramble 15%, vague 15%, dodge 10% |
+
+The hosted app has no database, so the persona travels with the browser inside a sealed token: XOR with a SHA-256 keystream and signed with HMAC. The browser carries it but cannot read or change it. There is also an **Interview yourself** option, where the AI answers as a well-prepared version of you, built from your own resume.
+
+<br>
+
+## How it works
+
+<img src="docs/screenshots/pipeline.png" alt="Interview pipeline" width="100%">
+
+**Setup, once per interview**
+1. **Read** the resume with `pypdf` or `python-docx`, clean it, and split it into sections.
+2. **Extract** a structured profile (roles, projects, skills, numbers) as JSON with gpt-oss-120b.
+3. **Plan and ground** topics. Each one must quote a resume line, and code verifies it exists. If not, it is relinked to the closest real line or dropped.
+
+**The loop, once per topic**
+
+4. **Ask.** gpt-oss-20b writes the question from the topic, the retrieved resume passage (RAG) and everything already asked, streamed over SSE.
+5. **Answer.** Typed, or spoken and transcribed by Whisper.
+6. **Measure delivery** with plain code: words, pace, filler words, numbers mentioned.
+7. **Grade twice in parallel.** gpt-oss-20b on Groq and Gemini score against the same rubric without seeing each other. The grade is the average.
+8. **Adapt.** 8 or more raises difficulty, 4 or less lowers it, and a thin answer gets a targeted follow-up.
+
+**The end**
+
+9. **Review.** Practice score = average grade x 10, calculated by code, not the model. The AI writes the feedback and practice plan.
+
+**Reliability.** Every AI call goes through one client with a fallback chain (Groq model, other Groq model, Gemini), short cooldowns after rate limits, an 8-second cap on the second grader, and a plain-code fallback for every AI step.
+
+<br>
+
+## Tech stack
+
+| Layer | Technology | Why |
+|---|---|---|
+| Frontend | React, TypeScript, Vite | Component-based UI, type safety, fast builds |
+| Backend | Python, FastAPI | Python AI ecosystem, request validation, streaming |
+| Main model | gpt-oss-120b / gpt-oss-20b on Groq | Strong reasoning, very low latency for live conversation |
+| Second grader | Google Gemini | Independent judge from another model family, and a fallback |
+| Speech | Whisper large-v3-turbo, Orpheus TTS | Accurate transcription, natural interviewer voice |
+| Live text | Server-Sent Events | Word-by-word streaming that works on serverless |
+| Retrieval | BM25 (hosted), Ollama embeddings + FAISS (local) | Sends only the relevant resume passage to the model |
+| Web search | Groq browser search | Live, current questions for the question bank |
+| Documents | pypdf, python-docx | Lightweight resume parsing that runs on serverless |
+| Hosting | Vercel | Free HTTPS deployment for the site and the API |
+| Storage | Browser localStorage (hosted), SQLite (local) | No user data kept on the server |
+
+<br>
+
+## Results
+
+| Check | Result |
+|---|---|
+| Strong vs weak interview on the same resume | **97** vs **57** practice score |
+| Grader ranking on 24 answers of known quality | Spearman **0.92** (before fix), **0.91** (after) |
+| Confident but wrong SQL answer | Scored **6** under the original rubric, **3** after adding a correctness rule |
+| Agreement between Groq and Gemini | Weighted kappa about **0.8** |
+| Grading time per answer | about **1.7 s** (down from 21.8 s after capping the second grader) |
+| Mirror mode, bluffer persona | **2 of 2** bluffs caught, interviewer score **96** |
+| Automated tests | **7 of 7** passing |
+
+The grader benchmark lives on the in-app Study page (`#/study`): 24 fixed answers, automatic checks, and blind human rating.
+
+<br>
+
+## Project structure
+
+```
+server/
+  main.py         API routes, uploads, rate limiting, SSE
+  engine.py       planning, grounding, questions, grading, adaptation, review, drills
+  llm.py          Groq / Gemini / Ollama client, JSON output, streaming, fallback, speech, search
+  prompts.py      interviewer styles, difficulty levels, rubric, JSON schemas
+  analytics.py    delivery statistics without AI
+  documents.py    PDF / DOCX / TXT text extraction
+  sections.py     resume section detection
+  retrieval.py    BM25 and FAISS hybrid retrieval
+  research.py     company question bank
+  mirror.py       Mirror mode personas, sealed tokens, reveal scoring
+  study.py        grader benchmark
+  store.py        SQLite or browser storage
+web/src/
+  pages/          Overview, Setup, Room, Review, Questions, Mirror, Progress, Study
+  components/     animated faces, charts, icons
+  lib/            API client, voice, routing, storage
+tests/            regression tests with simulated model responses
+```
+
+<br>
 
 ## Run locally
 
-Requires Python 3.10+, Node.js 18+, and Ollama.
+Requires Python 3.10+ and Node.js 18+.
+
+**With Groq (same as the live site)**
+
+```bash
+python3 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt "uvicorn[standard]"
+cd web && npm ci && npm run build && cd ..
+export GROQ_API_KEY=your_key          # required
+export GEMINI_API_KEY=your_key        # optional: second grader and fallback
+python run.py
+```
+
+**Fully offline with Ollama**
 
 ```bash
 ollama pull llama3.2
 ollama pull nomic-embed-text
-python3 -m venv .venv
-source .venv/bin/activate
 pip install -r requirements-local.txt
-cd web
-npm ci
-npm run build
-cd ..
 python run.py
 ```
 
-Open http://127.0.0.1:8000. For frontend development, run `npm run dev` from `web/` in a second terminal.
+Open http://127.0.0.1:8000. For frontend development, run `npm run dev` inside `web/`.
 
-## Hosted deployment
-
-The FastAPI entrypoint is `app.py`, and the built frontend is served from `public/`. Set `GROQ_API_KEY` for the hosted provider. Optional `GEMINI_API_KEY` and `MISTRAL_API_KEY` enable fallback providers. The model client contains the supported configuration variables.
-
-On Vercel, interviews are stored in the browser and sent back with requests. Locally, the app uses SQLite. Provider fallback can change which model grades an answer.
-
-Local Ollama processing runs on the laptop. Hosted resumes, answers, and audio are sent to external AI services. Device speech voices may also use external services. Browser history storage does not imply that inference stays on the device.
-
-## Architecture
-
-- `web/src/pages/`: overview, setup, interview room, review, progress, question research, and grader evaluation.
-- `web/src/lib/`: API/SSE transport, browser storage, speech, routing, and agreement statistics.
-- `server/main.py`: API routes, document upload, speech, and static hosting.
-- `server/engine.py`: planning, grading, adaptive follow-ups, reviews, and drills.
-- `server/prompts.py`: prompts, rubrics, and structured-output schemas.
-- `server/llm.py`: model providers, structured generation, streaming, speech, and search.
-- `server/retrieval.py`: BM25 retrieval, plus local embedding/FAISS hybrid search when available.
-- `server/research.py`: company research and reported question discovery.
-- `server/study.py`: fixed answer set for grader evaluation.
-- `server/documents.py`, `sections.py`, `analytics.py`, `store.py`: document parsing, focus areas, delivery heuristics, and persistence.
-
-## Evaluation and limitations
-
-Two graders assess answers without seeing each other's scores when both are available. Agreement measures consistency, not correctness. The `#/study` page supports blind human ratings and automatic checks over 24 developer-authored answers. This is a development benchmark, not independent validation of hiring readiness.
-
-Planned reliability work (stricter grounding checks, schema validation, disclosed single-grader results) is kept aside for a later release. Remaining limitations include independent human validation, model grading bias, question-bank provenance, and hosted quota controls.
-
-## Verification
+**Deploy to Vercel**
 
 ```bash
-cd web
-npm run build
-cd ..
-pip install -r requirements-dev.txt
+npx vercel env add GROQ_API_KEY
+npx vercel --prod
+```
+
+`app.py` is the serverless entry point and the built frontend is served from `public/`.
+
+**Tests**
+
+```bash
 python -m unittest discover -s tests -v
 ```
 
-The regression checks use simulated model responses and isolated in-memory sessions. They do not consume provider quota or modify interview history.
+The tests use simulated model responses, so they run offline and use no API quota.
 
-## Credits
+<br>
 
-Started from the MIT-licensed GPTInterviewer prototype: https://github.com/jiatastic/GPTInterviewer. Rehearsly replaces its frontend and backend with a React/TypeScript UI and FastAPI interview engine. See `LICENSE`.
+## Privacy
+
+On the hosted site, interviews are stored only in your browser and sent with each request. Nothing is kept on the server. Resumes and answers are processed by Groq and Google. For fully private use, run it locally with Ollama.
+
+## Roadmap
+
+- Validate grades against several independent human raters
+- Correct each model's grading bias before averaging
+- Coding and system design rounds
+- Hindi and other Indian languages for spoken answers
+
+<br>
+
+## Author
+
+**Siddarth Valasubramanian**<br>
+B.Tech CSE (Data Science), UPES Dehradun<br>
+[LinkedIn](https://www.linkedin.com/in/siddarth-valasubramanian) &nbsp;|&nbsp; [GitHub](https://github.com/SiddarthValas)
+
+## License
+
+MIT. See [LICENSE](LICENSE).

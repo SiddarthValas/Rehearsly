@@ -1,0 +1,5 @@
+# Everything for running Rehearsly on your own machine with Ollama.
+-r requirements.txt
+uvicorn[standard]>=0.29
+faiss-cpu>=1.8
+faster-whisper>=1.0

@@ -1,0 +1,11 @@
+# Only the API (server/, app.py) and the built site (public/) are needed on Vercel.
+web
+.venv
+data
+_to_delete
+.idea
+**/__pycache__
+*.db
+AI_Interviewer_Project_Proposal.pdf
+generate_project_pdf.py
+output

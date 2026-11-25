@@ -1,0 +1,7 @@
+# Runtime for the hosted (Vercel) deploy. Kept lean: no FAISS or Whisper, Groq does that work.
+fastapi>=0.110
+python-multipart>=0.0.9
+numpy>=1.26
+pypdf>=4.0
+python-docx>=1.1
+jsonschema>=4.18

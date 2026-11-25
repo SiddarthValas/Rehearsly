@@ -113,7 +113,7 @@ export function App() {
           className="page"
           key={route.name + ("id" in route ? route.id : "") + (route.name === "bank" ? route.company + route.role : "")}
         >
-          {route.name === "home" && <Landing />}
+          {route.name === "home" && <Landing theme={theme} onToggleTheme={toggle} />}
           {route.name === "new" && <Setup health={health} onStarted={(id) => go(`/room/${id}`)} />}
           {route.name === "room" && <Room id={route.id} health={health} />}
           {route.name === "review" && <ReviewPage id={route.id} />}

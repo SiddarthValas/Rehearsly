@@ -4791,3 +4791,15 @@ h1, h2, h3 { letter-spacing: -0.025em; }
 .chip-btn.on { background: color-mix(in srgb, var(--low) 16%, transparent); border-color: var(--low); }
 .chip-btn.picked { background: color-mix(in srgb, var(--amber) 16%, transparent); border-color: var(--amber); }
 .listening .type-instead { border: 1px solid var(--line-strong); border-radius: 999px; padding: 5px 12px; }
+
+/* ------------------------------------------------------------------ hero bulb as the light switch */
+.ghost-switch { all: unset; display: inline-grid; place-items: center; cursor: pointer; border-radius: 50%; -webkit-tap-highlight-color: transparent; }
+.ghost-switch:focus-visible { outline: 2px solid var(--amber); outline-offset: 10px; }
+.ghost-switch .ghost-bulb { transition: transform 0.25s var(--ease); }
+.ghost-switch:hover .ghost-bulb { transform: translateY(6%) scale(1.06); }
+.ghost-switch:active .ghost-bulb { transform: translateY(9%) scale(0.97); }
+.ghost-switch.is-off .ghost-glass { stroke: color-mix(in srgb, var(--ink) 22%, transparent); stroke-width: 2; }
+.ghost-switch.is-off:hover .ghost-glass { stroke: var(--amber); }
+@media (prefers-reduced-motion: no-preference) {
+  .ghost-switch.is-on .ghost { animation: lamp-on 1.1s steps(1, end) both; }
+}

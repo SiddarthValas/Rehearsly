@@ -9,12 +9,26 @@ const FEATURES = [
   { icon: I.Refresh, title: "Review and try again", text: "Get specific feedback, revisit weak topics, and track your practice scores across rehearsals." },
 ];
 
-export function Landing() {
+type Origin = { x: number; y: number };
+
+export function Landing({ theme, onToggleTheme }: { theme: "dark" | "light"; onToggleTheme: (origin?: Origin) => void }) {
+  const lit = theme === "dark";
   return (
     <div className="landing landing-focused">
       <section className="l-hero">
         <div className="l-hero-copy">
-          <GhostLight size={110} cone />
+          <button
+            type="button"
+            className={`ghost-switch ${lit ? "is-on" : "is-off"}`}
+            onClick={(event) => {
+              const box = event.currentTarget.getBoundingClientRect();
+              onToggleTheme({ x: box.left + box.width / 2, y: box.top + box.height * 0.4 });
+            }}
+            aria-label={lit ? "Turn the light off (switch to light mode)" : "Turn the light on (switch to dark mode)"}
+            title={lit ? "Turn the light off" : "Turn the light on"}
+          >
+            <GhostLight size={110} cone={lit} state={lit ? "idle" : "off"} />
+          </button>
           <Reveal text="Rehearse your next interview." />
           <p className="l-lede">Personalized questions, focused follow-ups, and feedback you can practise with. Work through one answer at a time.</p>
           <div className="l-ctas">
